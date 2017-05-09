@@ -928,6 +928,7 @@ class TestBuildingAPI(unittest.TestCase):
         self.id = 1
         self.mock_response = mock.MagicMock()
         self.json = {'json': 'test'}
+        self.mock_response.content = 'test content'
         self.mock_response.json.return_value = self.json
         self.mock_response.raise_for_status.return_value = True
         self.token = 'token'
@@ -971,7 +972,7 @@ class TestBuildingAPI(unittest.TestCase):
         mock_requests.get.assert_called_with(
             self.id_url + '/report', **expected
         )
-        self.assertEqual(result, self.json)
+        self.assertEqual(result, self.mock_response.content)
         self.assertRaises(
             pybes.BESError, self.client.get_building,
             self.id, report_type='wrong'

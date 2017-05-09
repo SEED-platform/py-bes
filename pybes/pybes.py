@@ -695,9 +695,10 @@ class BESClient(object):
         """
         Get Preview Building Details
 
-        If report_type is set to 'pdf' a PDF report will be returned.
-        If report_type is set to 'simple' a simplified data structure lacking
-        (some of the) nested info will be returned.
+        If the report_type is report or pdf (identical) the returned json,
+        indicates the preview scores and contains a link to the pdf.
+        This is only available for preview building the have had a simulation
+        run.
 
         :param id: id of building
         :type id: int
@@ -1450,6 +1451,8 @@ class BESClient(object):
         """
         Get Building Details
 
+        If report_type is set to 'pdf' a PDF report will be returned.
+        If report_type is set to 'simple' a simplified data structure lacking
         (some of the) nested info will be returned.
 
         :param id: id of building
@@ -1465,7 +1468,7 @@ class BESClient(object):
         params = {'id': id, 'api_version': api_version}
         if report_type:
             if report_type not in ['simple', 'pdf', 'report']:
-                msg = "report_type must be  'simple' or 'pdf' (or None)"
+                msg = "report_type must be 'simple', 'report', 'pdf' or None"
                 raise BESError(msg)
             if report_type == 'pdf':
                 report_type = 'report'
@@ -1474,7 +1477,7 @@ class BESClient(object):
         self._check_call_success(
             response, prefix="Unable to get building details"
         )
-        return response.json()
+        return response.content if report_type == 'report' else response.json()
 
     def get_building_blocks(self, building_id):
         """
