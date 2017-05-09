@@ -635,7 +635,7 @@ class TestPreviewBuildingAPI(unittest.TestCase):
         mock_requests.get.assert_called_with(
             url, params={'token': self.token}, timeout=TIMEOUT
         )
-        self.assertEqual('pdf', result)
+        self.assertEqual(self.json, result)
 
         # check error reporting
         self.assertRaises(

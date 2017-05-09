@@ -702,19 +702,21 @@ class BESClient(object):
 
         :param id: id of building
         :type id: int
-        :param report_type: report type: 'simple' or 'pdf' or None
+        :param report_type: report type: 'simple' or 'pdf'/'report') or None
         :type report_type: str
         :returns: preview building details
         :rtype: dict or PDF
         :raises: BESError/APIError
         """
         endpoint = 'preview_buildings'
-        if report_type and report_type not in ['simple', 'pdf']:
-            msg = "report_type must be  'simple' or 'pdf' (or None)"
-            raise BESError(msg)
         params = {'id': id}
         if report_type:
-            params['action'] = 'report' if report_type == 'pdf' else 'simple'
+            if report_type not in ['simple', 'pdf', 'report']:
+                msg = "report_type must be 'simple', 'report', 'pdf' or None"
+                raise BESError(msg)
+            if report_type == 'pdf':
+                report_type = 'report'
+            params['action'] = report_type
         response = self._get(endpoint, **params)
         self._check_call_success(
             response, prefix="Unable to get preview building details"
