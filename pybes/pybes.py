@@ -753,11 +753,17 @@ class BESClient(object):
 
         :param id: id of building
         :type id: int
-        :param status: one of edit, verify, revert
+        :param status: one of edit_mode, verify, revert
         :type status: string
         :rtype: None
         :raises: BESError or APIError
         """
+        endpoint = 'preview_buildings'
+        response = self._put(endpoint, id=id, action=status)
+        prefix = "Unable to set preview building {} status to {}".format(
+            id, status
+        )
+        self._check_call_success(response, prefix=prefix)
 
     def simulate_preview_building(self, id):
         """
@@ -777,7 +783,7 @@ class BESClient(object):
         return response.content
 
     def update_preview_building(self, building_id, block_id,
-                                assessment_type='Test',
+                                assessment_type=None,
                                 name=None,
                                 year_of_construction=None,
                                 address=None,
@@ -785,13 +791,20 @@ class BESClient(object):
                                 state=None,
                                 zip_code=None,
                                 notes=None,
+                                **kwargs
                                 ):
         """
         Update a preview building.
 
-        Note:  Only the following attributes are accepted, these all refer
-        to the building though a block id is compulsory. name is used
-        not building_name.
+        Note:  Only the following attributes are currently accepted,
+        these all refer to the building though a block id is compulsory.
+        name is used not building_name.
+
+        It is supposed to be  possible to supply arguments that refer to the
+        block, (e.g. 'floor:floor_type') but there is currently a bug
+        preventing this. This will also cause issues since ':' is an
+        illegal character in a Python variable name, use dictionary expansion
+        instead.
 
 
         :param building_id: id of building
@@ -822,6 +835,7 @@ class BESClient(object):
         building = _params_from_dict(
             locals(), exclude=['building_id', 'extras']
         )
+        building.update(kwargs)
         params = {'id': building_id, 'building': building}
         response = self._put(endpoint, **params)
         self._check_call_success(
