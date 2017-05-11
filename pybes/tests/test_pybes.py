@@ -457,8 +457,9 @@ class TestAPIGenericsNoCall(unittest.TestCase):
         with self.assertRaises(pybes.APIError) as conm:
             self.client._check_call_success(mock_response, prefix='Test')
         error = conm.exception
-        self.assertEqual(
-            error.message, 'Test: 404 test: error, error: test'
+        assert (
+            error.message == 'Test: 404 test: error, error: test' or
+            error.message == 'Test: 404 error: test, test: error'
         )
 
         # error as string
