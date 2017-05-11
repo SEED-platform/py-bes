@@ -453,7 +453,7 @@ class BESClient(object):
         :type response: Requests.Response
         :param prefix: Prefixed to error message
         :type prefix: str
-        :param default: default error messagee
+        :param default: default error message
 
         :raises: APIError
         """
