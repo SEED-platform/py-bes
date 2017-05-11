@@ -828,7 +828,7 @@ class TestBlockAPI(unittest.TestCase):
             'token': self.token,
         }
         result = self.client.create_block(
-            1, 'test', 2, 9, 8, True, 3, 10, '1,1', '1,1', 100, 100,
+            1, 2, 'test', 9, 8, True, 3, 10, '1,1', '1,1', 100, 100,
             has_drop_ceiling=False
         )
         mock_requests.post.assert_called_with(
@@ -838,14 +838,14 @@ class TestBlockAPI(unittest.TestCase):
 
     def test_delete_block(self, mock_requests):
         """Test delete_block method"""
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         self.client.delete_block(self.id)
         mock_requests.delete.assert_called_with(self.id_url, **expected)
 
     def test_get_block(self, mock_requests):
         """Test get_block method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_block(self.id)
         mock_requests.get.assert_called_with(self.id_url, **expected)
         self.assertEqual(result, self.json)
@@ -854,7 +854,7 @@ class TestBlockAPI(unittest.TestCase):
         """Test update_block method"""
         expected = {
             'json': {'token': 'token', 'shape_id': 2, 'name': 'test'},
-            'timeout': 1.5
+            'timeout': TIMEOUT
         }
         self.client.update_block(self.id, 2, name='test')
         mock_requests.put.assert_called_with(self.id_url, **expected)
@@ -880,7 +880,7 @@ class TestBlockAPI(unittest.TestCase):
 
     def test_delete_block_resource(self, mock_requests):
         """Test delete_block_resource method"""
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         self.client.delete_block_resource('air_handler', self.id)
         mock_requests.delete.assert_called_with(
             self.id_url.replace('blocks', 'block_air_handlers'), **expected
@@ -889,7 +889,7 @@ class TestBlockAPI(unittest.TestCase):
     def test_get_block_resource(self, mock_requests):
         """Test get_block_resource method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_block_resource('air_handler', self.id)
         mock_requests.get.assert_called_with(
             self.id_url.replace('blocks', 'block_air_handlers'), **expected
@@ -899,7 +899,7 @@ class TestBlockAPI(unittest.TestCase):
     def test_get_block_resources(self, mock_requests):
         """Test get_block_resources method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_block_resources('air_handler', self.id)
         mock_requests.get.assert_called_with(
             self.id_url + '/block_air_handlers', **expected
@@ -910,7 +910,7 @@ class TestBlockAPI(unittest.TestCase):
         """Test update_block_resource method"""
         expected = {
             'json': {'token': 'token', 'air_handler_id': 2, 'name': 'test'},
-            'timeout': 1.5
+            'timeout': TIMEOUT
         }
         self.client.update_block_resource(
             'air_handler', self.id, 2, name='test'
@@ -963,7 +963,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_building(self, mock_requests):
         """Test get_building method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_building(self.id)
         mock_requests.get.assert_called_with(self.id_url, **expected)
         self.assertEqual(result, self.json)
@@ -981,7 +981,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_building_blocks(self, mock_requests):
         """Test get_building_blocks method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_building_blocks(self.id)
         mock_requests.get.assert_called_with(
             self.id_url + '/blocks', **expected
@@ -991,7 +991,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_building_resources(self, mock_requests):
         """Test get_building_resources method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_building_resources('air_handler', self.id)
         mock_requests.get.assert_called_with(
             self.id_url + '/air_handlers', **expected
@@ -1001,7 +1001,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_building_score(self, mock_requests):
         """Test get_building_score method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_building_score(self.id)
         mock_requests.get.assert_called_with(
             self.id_url + '/score', **expected
@@ -1011,7 +1011,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_list_buildings(self, mock_requests):
         """Test list_buildings method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.list_buildings()
         mock_requests.get.assert_called_with(self.url, **expected)
         self.assertEqual(result, self.json)
@@ -1023,7 +1023,7 @@ class TestBuildingAPI(unittest.TestCase):
         )
         expected = {
             'params': {'token': 'token', 'building_ids': '1,2,3'},
-            'timeout': 1.5
+            'timeout': TIMEOUT
         }
         self.client.manage_buildings(1, 2, 3)
         mock_requests.get.assert_called_with(url, **expected)
@@ -1031,7 +1031,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_simulate_building(self, mock_requests):
         """Test simulate_building method"""
         mock_requests.post.return_value = self.mock_response
-        expected = {'json': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'json': {'token': 'token'}, 'timeout': TIMEOUT}
         self.client.simulate_building(self.id)
         mock_requests.post.assert_called_with(
             self.id_url + '/simulate', **expected
@@ -1041,7 +1041,7 @@ class TestBuildingAPI(unittest.TestCase):
         """Test update_building method"""
         expected = {
             'json': {'token': 'token', 'notes': 'test'},
-            'timeout': 1.5
+            'timeout': TIMEOUT
         }
         self.client.update_building(self.id, notes='test')
         mock_requests.put.assert_called_with(self.id_url, **expected)
@@ -1052,7 +1052,7 @@ class TestBuildingAPI(unittest.TestCase):
         mock_response.json.return_value = {'valid': True}
         mock_response.raise_for_status.return_value = True
         mock_requests.get.return_value = mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.validate_building(self.id)
         mock_requests.get.assert_called_with(
             self.id_url + '/validate', **expected
@@ -1089,7 +1089,7 @@ class TestBuildingAPI(unittest.TestCase):
 
     def test_delete_resource(self, mock_requests):
         """Test delete_resource method"""
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         self.client.delete_resource('air_handler', self.id)
         mock_requests.delete.assert_called_with(
             self.id_url.replace('buildings', 'air_handlers'),
@@ -1099,7 +1099,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_resource(self, mock_requests):
         """Test get_resource method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_resource('air_handler', self.id)
         mock_requests.get.assert_called_with(
             self.id_url.replace('buildings', 'air_handlers'),
@@ -1111,7 +1111,7 @@ class TestBuildingAPI(unittest.TestCase):
         """Test update_resource method"""
         expected = {
             'json': {'token': 'token', 'name': 'test'},
-            'timeout': 1.5
+            'timeout': TIMEOUT
         }
         self.client.update_resource(
             'air_handler', self.id, name='test'
@@ -1124,7 +1124,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_get_resource_type(self, mock_requests):
         """Test get_resource_type method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.get_resource_type('air_handler', self.id)
         mock_requests.get.assert_called_with(
             self.id_url.replace('buildings', 'air_handler_types'),
@@ -1135,7 +1135,7 @@ class TestBuildingAPI(unittest.TestCase):
     def test_list_resource_type(self, mock_requests):
         """Test list_resource method"""
         mock_requests.get.return_value = self.mock_response
-        expected = {'params': {'token': 'token'}, 'timeout': 1.5}
+        expected = {'params': {'token': 'token'}, 'timeout': TIMEOUT}
         result = self.client.list_resource_types('air_handler')
         mock_requests.get.assert_called_with(
             self.url.replace('buildings', 'air_handler_types'),

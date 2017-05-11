@@ -9,11 +9,17 @@ BES API Client"""
 # Imports from Standard Library
 from collections import (Mapping, Sequence)
 import string
+import sys
 
 # Imports from External Modules
 import requests
 
 # Config/Constants
+PY3 = sys.version_info[0] == 3
+if PY3:
+    basestring = str
+
+
 UPPERCASE = set(string.ascii_uppercase)
 LOWERCASE = set(string.ascii_lowercase)
 DIGITS = set(string.digits)
@@ -25,14 +31,13 @@ BASE_URL = 'https://api.labworks.org/api'
 # BASE_URL = 'https://buildingenergyscore.energy.gov/api'
 
 # http://docs.python-requests.org/en/master/user/quickstart/#timeouts
-TIMEOUT = 1.5
+TIMEOUT = 2
 
 BLOCK_RESOURCES = {
     'air_handler': 'block_air_handlers',
     'fixture': 'block_fixtures',
     'water_heater': 'block_water_heaters',
     'zone_equipment': 'block_zone_equipments',
-    # 'blocks',
 }
 
 BES_RESOURCES = [
@@ -91,7 +96,7 @@ BES_RESOURCE_TYPES = {
 # Private Functions and Classes
 def _fix_params(params):
     """For v1 api  -- True is True but False is a string"""
-    for key, val in params.iteritems():
+    for key, val in params.items():
         if val is False or str(val).lower() == 'false':
             params[key] = 'False'
         elif str(val).lower() == 'true':
@@ -157,7 +162,7 @@ def _params_from_dict(dct, exclude=None, required=None):
             )
             raise BESError(msg)
     return {
-        key: val for key, val in dct.iteritems()
+        key: val for key, val in dct.items()
         if val is not None and key not in exclude
     }
 
@@ -216,8 +221,8 @@ def _verify_password(passwd, min_chars=8):
     pwd = set(passwd)
     # contains at least one char from each set
     contains_all_required = True if (
-        len(pwd.intersection(UPPERCASE)) and len(pwd.intersection(LOWERCASE))
-        and len(pwd.intersection(DIGITS)) and len(pwd.intersection(SYMBOLS))
+        pwd.intersection(UPPERCASE) and pwd.intersection(LOWERCASE)
+        and pwd.intersection(DIGITS) and pwd.intersection(SYMBOLS)
     ) else False
     if not contains_all_required or len(passwd) < min_chars:
         msg = (
@@ -371,8 +376,13 @@ class BESClient(object):
         """
         Set up Client:
 
-        Note for everything except setting up a user you will need to supply
-        email, password and organization_token in order to authenticate.
+        Note for everything  you will need to supply email, password and
+        organization_token, or access_token (& user_id) in order to
+        authenticate. If the former, instantiating a Client will fetch
+        an access token and store it as client.token. You can reuse this token
+        by supplying it as access_token in order to avoid this step,  as API
+        calls are rate limited. If you do this the onus on ensuring the token
+        is valid falls to you.
 
         :param email: api user email
         :type email: str
@@ -382,7 +392,12 @@ class BESClient(object):
         :type email: str
         :param organization_token: api organization token
         :type organization_token: str
+        :param access_token: api access token
+        :type access_token: str
+        :param user_id_token: api user_id token
+        :type user_id_token: str
         :param timeout: server timeout in seconds default 0.5
+        :type timeout: float
         """
         self.email = email
         self.password = password
@@ -412,8 +427,6 @@ class BESClient(object):
         :raises: APIError
         """
         endpoint = 'users/authenticate'
-        user_id = None
-        token = None
         params = {
             'email': email,
             'password': password,
@@ -447,7 +460,6 @@ class BESClient(object):
         # pylint: disable=no-self-use, no-member
         try:
             response.raise_for_status()
-            pass
         except requests.HTTPError:
             try:
                 error = response.json().get('error')
@@ -569,7 +581,6 @@ class BESClient(object):
             kwargs, compulsory_params=compulsory_params
         )
         payload = {'timeout': self.timeout}
-        api_call = requests.put(url, **payload)
         if files:
             payload['files'] = files
         if use_json:
@@ -590,7 +601,6 @@ class BESClient(object):
             kwargs, compulsory_params=compulsory_params
         )
         payload = {'timeout': self.timeout}
-        api_call = requests.patch(url, **payload)
         if files:
             payload['files'] = files
         payload['json'] = params
@@ -619,8 +629,7 @@ class BESClient(object):
                                 postal_code=None,
                                 use_type=None,
                                 orientation=None,
-                                number_floors=None
-                                ):
+                                number_floors=None):
         """
         :param building_name: name of building
         :type building_name: str
@@ -669,9 +678,11 @@ class BESClient(object):
         :rtype: None
         :raises: APIError
         """
-        # endpoint = 'buildings/preview'
         endpoint = 'preview_buildings'
-        self._delete(endpoint, id=id)
+        response = self._delete(endpoint, id=id)
+        self._check_call_success(
+            response, prefix="Unable to delete preview building"
+        )
 
     def duplicate_preview_building(self, id):
         """
@@ -683,7 +694,6 @@ class BESClient(object):
         :rtype: Dict
         :raises: APIError
         """
-        # endpoint = 'buildings/preview'
         endpoint = 'preview_buildings'
         response = self._get(endpoint, id=id, action='duplicate')
         self._check_call_success(
@@ -791,8 +801,7 @@ class BESClient(object):
                                 state=None,
                                 zip_code=None,
                                 notes=None,
-                                **kwargs
-                                ):
+                                extras=None):
         """
         Update a preview building.
 
@@ -802,10 +811,9 @@ class BESClient(object):
 
         It is supposed to be  possible to supply arguments that refer to the
         block, (e.g. 'floor:floor_type') but there is currently a bug
-        preventing this. This will also cause issues since ':' is an
-        illegal character in a Python variable name, use dictionary expansion
-        instead.
-
+        preventing this (2017-5-10). These should be supplied a dictionary
+        to extras (to allow for e.g. "floor:floor_type", representing nested
+        data structures).
 
         :param building_id: id of building
         :type building_id: int
@@ -827,6 +835,8 @@ class BESClient(object):
         :type assessment_type: str
         :param notes: building notes
         :type notes: str
+        :param extras: extra arguments representing blocks
+        :type extras: dict
         :raises: BESError (inc APIError)
         :returns: building details (long form).
         :rtype: dict
@@ -835,7 +845,8 @@ class BESClient(object):
         building = _params_from_dict(
             locals(), exclude=['building_id', 'extras']
         )
-        building.update(kwargs)
+        if extras:
+            building.update(extras)
         params = {'id': building_id, 'building': building}
         response = self._put(endpoint, **params)
         self._check_call_success(
@@ -879,8 +890,7 @@ class BESClient(object):
 
     def update_user(self, id,
                     email=None, password=None, password_confirmation=None,
-                    first_name=None, last_name=None
-                    ):
+                    first_name=None, last_name=None):
         """
         Update a users details.
 
@@ -919,8 +929,8 @@ class BESClient(object):
     # v1 API functionality
     def create_block(self,
                      building_id,
-                     name,
                      shape_id,
+                     name,
                      floor_to_floor_height,
                      floor_to_ceiling_height,
                      is_above_ground,
@@ -955,94 +965,91 @@ class BESClient(object):
                      low_flow_faucets=None,
                      percent_footprint=None,
                      perimeter_zone_depth=None,
-                     uses_percent_served=None
-                     ):
+                     uses_percent_served=None):
         """
         Create a block.
 
         :param building_id: id of building
         :type building_id: int
+        :param shape_id: ID for the shape of this block. required
+        :type  shape_id int:
         :param name: custom name for block
         :type name: str
-        :param shape_id: ID for the shape of this block. required
-        :type  int:
         :param floor_to_floor_height: required Average floor-to-floor height
                                       (in feet). Must be > 9.
-        :type  float:
+        :type  floor_to_floor_height: float:
         :param floor_to_ceiling_height: required, Average floor-to-ceiling
                                         height (in feet). Must be > 0.
-        :type  float:
+        :type  floor_to_ceiling_height: float:
         :param is_above_ground: required True if above, false if below.
-        :type  bool:
+        :type is_above_ground bool:
         :param number_of_floors: required  Number of floors in block (1-500).
-        :type  int:
+        :type  number_of_floors: int:
         :param orientation: required Degrees from North of block (0-359).
-        :type  float:
+        :type  orientation: float:
         :param vertices: required x,y coordinates for the block vertices.
-        :type  str:
+        :type  vertices: str:
         :param position: required x,y coordinates of block position.
-        :type  str:
+        :type  position: str:
         :param dimension_1: required Length of dimension 1 (in feet).
-        :type  float:
+        :type  dimension_1: float:
         :param dimension_2: required Length of dimension 2 (in feet).
-        :type  float:
-        :param /dimension_3: optional Length of dimension 3 (in feet).
+        :type  dimension_2: float:
+        :param dimension_3: optional Length of dimension 3 (in feet).
                             Depends on shape if required.
-        :type  float:
+        :type dimension_3:  float:
         :param dimension_4: optional Length of dimension 4 (in feet).
-        :type  float:
+        :type  dimension_4: float:
         :param dimension_5: optional Length of dimension 5 (in feet).
-        :type  float:
+        :type  dimension_5: float:
         :param dimension_6: optional Length of dimension 6 (in feet).
-        :type  float:
+        :type  dimension_6: float:
         :param dimension_7: optional Length of dimension 7 (in feet).
-        :type  float:
+        :type  dimension_7: float:
         :param dimension_8: optional Length of dimension 8 (in feet).
-        :type  float:
+        :type  dimension_8: float:
         :param dimension_9: optional Length of dimension 9 (in feet).
-        :type  float:
+        :type  dimension_9: float:
         :param dimension_10: optional Length of dimension 10 (in feet).
-        :type  float:
+        :type  dimension_10: float:
         :param building_use_type_id: optional ID of building use type
                                       assigned to block.
-        :type  int:
-        :param building_use_type_id: optional use type ID
-        :type  int:
+        :type building_use_type_id int:
         :param floor_id: optional ID of floor assigned to block.
-        :type  int:
+        :type floor_id int:
         :param hvac_system_ez_status_id: optional ???
-        :type  int:
+        :type hvac_system_ez_status_id int:
         :param operation_id: optional ID of operation assigned to block.
-        :type  int:
+        :type operation_id int:
         :param operating_season_id: optional ID of operating season.
-        :type  int:
+        :type operating_season_id int:
         :param orientation_system_ez_status_id: optional ???
-        :type  int:
+        :type orientation_system_ez_status_id int:
         :param roof_id: optional ID of roof assigned to block.
-        :type  int:
+        :type roof_id int:
         :param skylight_id: optional ID of Skylight assigned to block.
-        :type  int:
+        :type skylight_id int:
         :param skylight_layout_id: optional ID of Skylight layout.
-        :type  int:
+        :type skylight_layout_id int:
         :param zone_layout_id: optional ID of zone layout.
-        :type  int:
+        :type zone_layout_id int:
         :param co_sensors: optional True if CO Sensors, false otherwise.
-        :type  bool:
+        :type co_sensors bool:
         :param has_drop_ceiling: optional
-        :type  bool:
+        :type has_drop_ceiling bool:
         :param has_timer_controls: optional
-        :type  bool:
+        :type has_timer_controls bool:
         :param has_toplight_control: optional ???
-        :type  bool:
+        :type has_toplight_control bool:
         :param low_flow_faucets: optional True if low flow faucets used.
-        :type  bool:
+        :type low_flow_faucets bool:
         :param percent_footprint: optional Skylight percent of roof area
                                   (usually 3%-5%).
-        :type  float:
+        :type percent_footprint float:
         :param perimeter_zone_depth: optional Perimeter zone depth.
-        :type  float:
+        :type perimeter_zone_depth float:
         :param uses_percent_served: optional True if uses percent served.
-        :type  bool:
+        :type uses_percent_served bool:
 
         :raises: BESError (inc APIError)
         :returns: block details.
@@ -1134,8 +1141,7 @@ class BESClient(object):
                      low_flow_faucets=None,
                      percent_footprint=None,
                      perimeter_zone_depth=None,
-                     uses_percent_served=None
-                     ):
+                     uses_percent_served=None):
         """
         Update an existing block. NOTE: A block's shape can NOT be modified
         once it has been created. If the wrong shape has been selected the
@@ -1144,86 +1150,84 @@ class BESClient(object):
         :param id: block id, required
         :type id: int
         :param shape_id: ID for the shape of this block. required
-        :type  int:
+        :type shape_id  int:
         :param name: custom name for block
         :type name: str
-        :param floor_to_floor_height:  Average floor-to-floor height
+        :param floor_to_floor_height: required Average floor-to-floor height
                                       (in feet). Must be > 9.
-        :type  float:
-        :param floor_to_ceiling_height: , Average floor-to-ceiling
+        :type  floor_to_floor_height: float:
+        :param floor_to_ceiling_height: required, Average floor-to-ceiling
                                         height (in feet). Must be > 0.
-        :type  float:
-        :param is_above_ground:  True if above, false if below.
-        :type  bool:
-        :param number_of_floors:   Number of floors in block (1-500).
-        :type  int:
-        :param orientation:  Degrees from North of block (0-359).
-        :type  float:
-        :param vertices:  x,y coordinates for the block vertices.
-        :type  str:
-        :param position:  x,y coordinates of block position.
-        :type  str:
-        :param dimension_1:  Length of dimension 1 (in feet).
-        :type  float:
-        :param dimension_2:  Length of dimension 2 (in feet).
-        :type  float:
-        :param /dimension_3:  Length of dimension 3 (in feet).
-                            Depends on shape if .
-        :type  float:
-        :param dimension_4:  Length of dimension 4 (in feet).
-        :type  float:
-        :param dimension_5:  Length of dimension 5 (in feet).
-        :type  float:
-        :param dimension_6:  Length of dimension 6 (in feet).
-        :type  float:
-        :param dimension_7:  Length of dimension 7 (in feet).
-        :type  float:
-        :param dimension_8:  Length of dimension 8 (in feet).
-        :type  float:
-        :param dimension_9:  Length of dimension 9 (in feet).
-        :type  float:
-        :param dimension_10:  Length of dimension 10 (in feet).
-        :type  float:
-        :param building_use_type_id:  ID of building use type
+        :type  floor_to_ceiling_height: float:
+        :param is_above_ground: required True if above, false if below.
+        :type is_above_ground bool:
+        :param number_of_floors: required  Number of floors in block (1-500).
+        :type  number_of_floors: int:
+        :param orientation: required Degrees from North of block (0-359).
+        :type  orientation: float:
+        :param vertices: required x,y coordinates for the block vertices.
+        :type  vertices: str:
+        :param position: required x,y coordinates of block position.
+        :type  position: str:
+        :param dimension_1: required Length of dimension 1 (in feet).
+        :type  dimension_1: float:
+        :param dimension_2: required Length of dimension 2 (in feet).
+        :type  dimension_2: float:
+        :param dimension_3: optional Length of dimension 3 (in feet).
+                            Depends on shape if required.
+        :type dimension_3:  float:
+        :param dimension_4: optional Length of dimension 4 (in feet).
+        :type  dimension_4: float:
+        :param dimension_5: optional Length of dimension 5 (in feet).
+        :type  dimension_5: float:
+        :param dimension_6: optional Length of dimension 6 (in feet).
+        :type  dimension_6: float:
+        :param dimension_7: optional Length of dimension 7 (in feet).
+        :type  dimension_7: float:
+        :param dimension_8: optional Length of dimension 8 (in feet).
+        :type  dimension_8: float:
+        :param dimension_9: optional Length of dimension 9 (in feet).
+        :type  dimension_9: float:
+        :param dimension_10: optional Length of dimension 10 (in feet).
+        :type  dimension_10: float:
+        :param building_use_type_id: optional ID of building use type
                                       assigned to block.
-        :type  int:
-        :param building_use_type_id:  use type ID
-        :type  int:
-        :param floor_id:  ID of floor assigned to block.
-        :type  int:
-        :param hvac_system_ez_status_id:  ???
-        :type  int:
-        :param operation_id:  ID of operation assigned to block.
-        :type  int:
-        :param operating_season_id:  ID of operating season.
-        :type  int:
-        :param orientation_system_ez_status_id: ???
-        :type  int:
-        :param roof_id:  ID of roof assigned to block.
-        :type  int:
-        :param skylight_id:  ID of Skylight assigned to block.
-        :type  int:
-        :param skylight_layout_id:  ID of Skylight layout.
-        :type  int:
-        :param zone_layout_id:  ID of zone layout.
-        :type  int:
-        :param co_sensors:  True if CO Sensors, false otherwise.
-        :type  bool:
-        :param has_drop_ceiling:  True if has drop ceiling
-        :type  bool:
-        :param has_timer_controls:  True if has timer controls
-        :type  bool:
-        :param has_toplight_control: ???
-        :type  bool:
-        :param low_flow_faucets:  True if low flow faucets used.
-        :type  bool:
-        :param percent_footprint:  Skylight percent of roof area
+        :type building_use_type_id int:
+        :param floor_id: optional ID of floor assigned to block.
+        :type floor_id int:
+        :param hvac_system_ez_status_id: optional ???
+        :type hvac_system_ez_status_id int:
+        :param operation_id: optional ID of operation assigned to block.
+        :type operation_id int:
+        :param operating_season_id: optional ID of operating season.
+        :type operating_season_id int:
+        :param orientation_system_ez_status_id: optional ???
+        :type orientation_system_ez_status_id int:
+        :param roof_id: optional ID of roof assigned to block.
+        :type roof_id int:
+        :param skylight_id: optional ID of Skylight assigned to block.
+        :type skylight_id int:
+        :param skylight_layout_id: optional ID of Skylight layout.
+        :type skylight_layout_id int:
+        :param zone_layout_id: optional ID of zone layout.
+        :type zone_layout_id int:
+        :param co_sensors: optional True if CO Sensors, false otherwise.
+        :type co_sensors bool:
+        :param has_drop_ceiling: optional
+        :type has_drop_ceiling bool:
+        :param has_timer_controls: optional
+        :type has_timer_controls bool:
+        :param has_toplight_control: optional ???
+        :type has_toplight_control bool:
+        :param low_flow_faucets: optional True if low flow faucets used.
+        :type low_flow_faucets bool:
+        :param percent_footprint: optional Skylight percent of roof area
                                   (usually 3%-5%).
-        :type  float:
-        :param perimeter_zone_depth:  Perimeter zone depth.
-        :type  float:
-        :param uses_percent_served:  True if uses percent served.
-        :type  bool:
+        :type percent_footprint float:
+        :param perimeter_zone_depth: optional Perimeter zone depth.
+        :type perimeter_zone_depth float:
+        :param uses_percent_served: optional True if uses percent served.
+        :type uses_percent_served bool:
 
         :rtype: None
         :raises: BES/APIError
@@ -1247,21 +1251,21 @@ class BESClient(object):
         For a full list see BLOCK_RESOURCES &
         https://blockenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience block_resources e.g. air_handler, 'air handler'
+        For convenience block_resources e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
-        if needed). block_ at the beginning may be ommited
+        if needed). block_ at the beginning may be omitted
 
         :param block_resource: resource name
-        :name block_resource: string
+        :type block_resource: string
         :param block_id: id of block.
-        :name block_id: int
+        :type block_id: int
         :param resource_id: id of resource, corresponds to eg. fixture_id
-        :name resouce_id: int
+        :type resouce_id: int
         :param kwargs: resource attributes to set
         :type kwargs': str
         :returns: resource
-        :rname: list
+        :rtype: list
         :raises: BESError/APIError
         """
         api_version = 1
@@ -1289,15 +1293,15 @@ class BESClient(object):
         For a full list see BLOCK_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience block_resource e.g. air_handler, 'air handler'
+        For convenience block_resource e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
-        if needed). block_ at the beginning may be ommited
+        if needed). block_ at the beginning may be omitted
 
         :param block_resource: resource name
-        :name block_resource: string
+        :type block_resource: string
         :param id: id of resource to delete.
-        :name id: int (or string)
+        :type id: int (or string)
         :rtype: None
         :raises: BESError/APIError
         """
@@ -1318,15 +1322,15 @@ class BESClient(object):
         For a full list see BLOCK_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience block_resource e.g. air_handler, 'air handler'
+        For convenience block_resource e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
-        if needed). block_ at the beginning may be ommited
+        if needed). block_ at the beginning may be omitted.
 
         :param block_resource: resource name
-        :name block_resource: string
+        :type block_resource: string
         :param id: id of resource name to retrieve.
-        :name id: int (or string)
+        :type id: int (or string)
         :returns: resource
         :rtype: dict
         :raises: BESError/APIError
@@ -1349,15 +1353,15 @@ class BESClient(object):
         For a full list see BLOCK_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience block_resource e.g. air_handler, 'air handler'
+        For convenience block_resource e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
-        if needed). block_ at the beginning may be ommited
+        if needed). block_ at the beginning may be omitted
 
         :param block_resource: resource name
-        :name block_resource: string
+        :type block_resource: string
         :param block_id: block_id of building.
-        :name block_id: int (or string)
+        :type block_id: int (or string)
         :returns: list of resource
         :rtype: list
         :raises: BESError/APIError
@@ -1386,17 +1390,17 @@ class BESClient(object):
         For a full list see BLOCK_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience block_resource e.g. air_handler, 'air handler'
+        For convenience block_resource e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
-        if needed). block_ at the beginning may be ommited
+        if needed). block_ at the beginning may be omitted
 
         :param block_resource: resource name
-        :name block_resource: string
+        :type block_resource: string
         :param block_resource_id: id of block resource to update.
-        :name block_resource_id: int (or string)
+        :type block_resource_id: int (or string)
         :param resource_id: id of resource, corresponds to eg. fixture_id
-        :name resouce_id: int
+        :type resouce_id: int
         :rtype: None
         :raises: BESError/APIError
         """
@@ -1524,15 +1528,15 @@ class BESClient(object):
         For a full list see BES_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience resource_name e.g. air_handler, 'air handler'
+        For convenience resource_name e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
         if needed).
 
         :param resource_name: resource name
-        :name resource_name: string
+        :type resource_name: string
         :param building_id: building_id of building.
-        :name building_id: int (or string)
+        :type building_id: int (or string)
         :returns: list of resource
         :rtype: list
         :raises: BESError/APIError
@@ -1637,6 +1641,7 @@ class BESClient(object):
 
     def update_building(self,
                         id,
+                        name=None,
                         year_of_construction=None,
                         address=None,
                         city=None,
@@ -1662,6 +1667,7 @@ class BESClient(object):
         :param notes: building notes
         :type notes: str
         :raises: BESError (inc APIError)
+        :raises: BESError (inc APIError)
         :rtype: None
         """
         api_version = 1
@@ -1679,7 +1685,7 @@ class BESClient(object):
         exception.
 
         :param id: id of building to validate.
-        :name id: int
+        :type id: int
         :returns: True if valid
         :rtype: True
         :raises: BESError/APIError
@@ -1706,15 +1712,15 @@ class BESClient(object):
         For a full list see BES_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience resource_name e.g. air_handler, 'air handler'
+        For convenience resource_name e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
         if needed).
 
         :param resource_name: resource name
-        :name resource_name: string
+        :type resource_name: string
         :param building_id: building_id of building.
-        :name building_id: int (or string)
+        :type building_id: int (or string)
         :param kwargs: resource attributes to set
         :type kwargs': str
         :returns: resource
@@ -1745,15 +1751,15 @@ class BESClient(object):
         For a full list see BES_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience resource_name e.g. air_handler, 'air handler'
+        For convenience resource_name e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
         if needed).
 
         :param resource_name: resource name
-        :name resource_name: string
+        :type resource_name: string
         :param id: id of resource to delete.
-        :name id: int (or string)
+        :type id: int (or string)
         :rtype: None
         :raises: BESError/APIError
         """
@@ -1774,15 +1780,15 @@ class BESClient(object):
         For a full list see BES_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience resource_name e.g. air_handler, 'air handler'
+        For convenience resource_name e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
         if needed).
 
         :param resource_name: resource name
-        :name resource_name: string
+        :type resource_name: string
         :param id: id of resource name to retrieve.
-        :name id: int (or string)
+        :type id: int (or string)
         :returns: resource
         :rtype: dict
         :raises: BESError/APIError
@@ -1805,15 +1811,15 @@ class BESClient(object):
         For a full list see BES_RESOURCES &
         https://buildingenergyscore.energy.gov/apidoc/v1.html
 
-        For convienience resource_name e.g. air_handler, 'air handler'
+        For convenience resource_name e.g. air_handler, 'air handler'
         will be converted (ie. spaces will be converted to underscores
         and the value will be converted to lower case and pluralized
         if needed).
 
         :param resource_name: resource name
-        :name resource_name: string
+        :type resource_name: string
         :param id: id of resource to update.
-        :name id: int (or string)
+        :type id: int (or string)
         :rtype: None
         :raises: BESError/APIError
         """
@@ -1841,7 +1847,7 @@ class BESClient(object):
         as a resource type e.g. fan control, window layouts.
         Thus building_use_type is not included.
         For the resource type you should specify 'air_handler'.
-        However, for convienience e.g. air_handler_types, 'air handler'
+        However, for convenience e.g. air_handler_types, 'air handler'
         will be converted (ie. types will be stripped, spaces will be
         converted to underscores and the value will be converted to
         lower case).
@@ -1877,7 +1883,7 @@ class BESClient(object):
         as a resource type e.g. fan control, window layouts.
         Thus building_use_type is not included.
         For the resource type you should specify 'air_handler'.
-        However, for convienience e.g. air_handler_types, 'air handler'
+        However, for convenience e.g. air_handler_types, 'air handler'
         will be converted (ie. types will be stripped, spaces will be
         converted to underscores and the value will be converted to
         lower case).
