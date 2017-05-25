@@ -128,9 +128,12 @@ def _get_resource_name(resource_name):
 
 def _get_resource_type(resource_type):
     """Perform conversions and check is valid"""
-    rtype = resource_type.lower().rstrip('s').replace(
-        ' ', '_'
-    ).replace('_types', '')
+    if resource_type.lower() in ['glass', 'status']:
+        rtype = resource_type.lower()
+    else:
+        rtype = resource_type.lower().rstrip('s').replace(
+            ' ', '_'
+        ).replace('_types', '')
     if rtype not in BES_RESOURCE_TYPES.keys():
         msg = "{} is not a valid resource type".format(resource_type)
         raise BESError(msg)
