@@ -36,6 +36,7 @@ TIMEOUT = 2
 BLOCK_RESOURCES = {
     'air_handler': 'block_air_handlers',
     'fixture': 'block_fixtures',
+    'surface': 'surfaces',
     'water_heater': 'block_water_heaters',
     'zone_equipment': 'block_zone_equipments',
 }
@@ -63,9 +64,10 @@ BES_RESOURCE_TYPES = {
     'compressor': 'compressor_types',
     'condenser_pump_control': 'condenser_pump_control_types',
     'condenser': 'condenser_types',
+    'condenser_pump_control': 'condenser_pump_control_types',
     'cooling_tower_fan_control': 'cooling_tower_fan_control_types',
     'distribution': 'distribution_types',
-    'fan_controls': 'fan_controls',
+    'fan_control': 'fan_controls',
     'floor': 'floor_types',
     'framing': 'framing_types',
     'fuel': 'fuel_types',
@@ -73,23 +75,23 @@ BES_RESOURCE_TYPES = {
     'glass': 'glass_types',
     'lamp': 'lamp_types',
     'mounting': 'mounting_types',
-    'operating_seasons': 'operating_seasons',
+    'operating_season': 'operating_seasons',
     'plant': 'plant_types',
     'roof': 'roof_types',
     'shading': 'shading_types',
-    'shapes': 'shapes',
+    'shape': 'shapes',
     'sink_source': 'sink_source_types',
-    'skylight_layouts': 'skylight_layouts',
+    'skylight_layout': 'skylight_layouts',
     'skylight': 'skylight_types',
     'slab_insulation': 'slab_insulation_types',
     'status': 'status_types',
-    'terminal_units': 'terminal_units',
+    'terminal_unit': 'terminal_units',
     'use': 'use_types',
     'use_type': 'use_types',
     'wall': 'wall_types',
-    'window_layouts': 'window_layouts',
+    'window_layout': 'window_layouts',
     'zone_equipment': 'zone_equipment_types',
-    'zone_layouts': 'zone_layouts'
+    'zone_layout': 'zone_layouts'
 }
 
 
@@ -128,12 +130,9 @@ def _get_resource_name(resource_name):
 
 def _get_resource_type(resource_type):
     """Perform conversions and check is valid"""
-    if resource_type.lower() in ['glass', 'status']:
-        rtype = resource_type.lower()
-    else:
-        rtype = resource_type.lower().rstrip('s').replace(
-            ' ', '_'
-        ).replace('_types', '')
+    rtype = resource_type.lower().replace('_types', '').replace(' ', '_')
+    if rtype not in ['glass', 'status']:
+        rtype = rtype.rstrip('s')
     if rtype not in BES_RESOURCE_TYPES.keys():
         msg = "{} is not a valid resource type".format(resource_type)
         raise BESError(msg)
@@ -1244,12 +1243,12 @@ class BESClient(object):
             response, prefix="Unable to update block"
         )
 
-    def create_block_resource(self, block_resource, block_id, resource_id,
+    def attach_block_resource(self, block_resource, block_id, resource_id,
                               **kwargs):
         """
         Create a resource and attach it to a block (by block_id).
 
-        e.g. air handler,floor etc.
+        e.g. air handler,floor (use create for surface) etc.
 
         For a full list see BLOCK_RESOURCES &
         https://blockenergyscore.energy.gov/apidoc/v1.html
@@ -1279,6 +1278,50 @@ class BESClient(object):
         params.update({
             'id': block_id, resource_name_id: resource_id,
             'api_version': api_version, 'action': action
+        })
+        response = self._post(endpoint, **params)
+        prefix = "Unable to attach {} to block: {}".format(
+            action, block_id
+        )
+        self._check_call_success(response, prefix=prefix)
+        return response.json()
+
+    def create_block_resource(self, block_resource, block_id, name,
+                              **kwargs):
+        """
+        Create a resource and attach it to a block (by block_id).
+
+        Use this for surface, for everything else create the resource,
+        then attach it using attach_block_resource
+
+        For a full list see BLOCK_RESOURCES &
+        https://blockenergyscore.energy.gov/apidoc/v1.html
+
+        For convenience block_resources e.g. air_handler, 'air handler'
+        will be converted (ie. spaces will be converted to underscores
+        and the value will be converted to lower case and pluralized
+        if needed). block_ at the beginning may be omitted
+
+        :param block_resource: resource name
+        :type block_resource: string
+        :param block_id: id of block.
+        :type block_id: int
+        :param name: name of resource
+        :type name: str
+        :param kwargs: resource attributes to set
+        :type kwargs': str
+        :returns: resource
+        :rtype: list
+        :raises: BESError/APIError
+        """
+        api_version = 1
+        endpoint = 'blocks'
+        # convert to correct format and check validity
+        action, _ = _get_block_resource(block_resource)
+        params = _params_from_dict(kwargs)
+        params.update({
+            'id': block_id, 'api_version': api_version, 'action': action,
+            'name': name
         })
         response = self._post(endpoint, **params)
         prefix = "Unable to create {} for block: {}".format(
