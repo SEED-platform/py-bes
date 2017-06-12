@@ -31,7 +31,7 @@ BASE_URL = 'https://api.labworks.org/api'
 # BASE_URL = 'https://buildingenergyscore.energy.gov/api'
 
 # http://docs.python-requests.org/en/master/user/quickstart/#timeouts
-TIMEOUT = 2
+TIMEOUT = 10
 
 BLOCK_RESOURCES = {
     'air_handler': 'block_air_handlers',
@@ -64,6 +64,7 @@ BES_RESOURCE_TYPES = {
     'compressor': 'compressor_types',
     'condenser_pump_control': 'condenser_pump_control_types',
     'condenser': 'condenser_types',
+    # 'condenser_loop': 'condenser_loop_types',
     'condenser_pump_control': 'condenser_pump_control_types',
     'cooling_tower_fan_control': 'cooling_tower_fan_control_types',
     'distribution': 'distribution_types',
@@ -792,7 +793,6 @@ class BESClient(object):
         self._check_call_success(
             response, prefix="Unable to simulate preview building"
         )
-        return response.content
 
     def update_preview_building(self, building_id, block_id,
                                 assessment_type=None,
@@ -849,8 +849,9 @@ class BESClient(object):
         )
         if extras:
             building.update(extras)
-        params = {'id': building_id, 'building': building}
-        response = self._put(endpoint, **params)
+        params = {'building': building}
+        print 'P:', params
+        response = self._put(endpoint, id=building_id, **params)
         self._check_call_success(
             response, prefix="Unable to update preview building"
         )
@@ -1517,9 +1518,11 @@ class BESClient(object):
         """
         Get Building Details
 
-        If report_type is set to 'pdf' a PDF report will be returned.
         If report_type is set to 'simple' a simplified data structure lacking
         (some of the) nested info will be returned.
+
+        If report_type is set to 'pdf' a PDF report will be returned.
+        See get_pdf for a function that will write this to a file.
 
         :param id: id of building
         :type id: int
@@ -1544,6 +1547,12 @@ class BESClient(object):
             response, prefix="Unable to get building details"
         )
         return response.content if report_type == 'report' else response.json()
+
+    def get_pdf(self, id, filename):
+        """Write a copy of the pdf report to filename"""
+        report = self.get_building(id, report_type='pdf')
+        with open(filename, 'wb') as pdf:
+            pdf.write(report)
 
     def get_building_blocks(self, building_id):
         """
@@ -1639,10 +1648,6 @@ class BESClient(object):
 
     def manage_buildings(self, *args):
         """
-        DOESN"T APPEAR TO WORK: undefined local variable or method
-        `get_building_rating_report_header' for
-        #<Api::V1::ManageBuildingsController:0x0000000a7aab48>`
-
         Download Simulation Results
 
         A comma-separated value (.csv) file that includes the current and
@@ -1664,7 +1669,7 @@ class BESClient(object):
         self._check_call_success(
             response, prefix="Unable to retrieve simulation results"
         )
-        return response.json()
+        return response.content
 
     def simulate_building(self, id):
         """
