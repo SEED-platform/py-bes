@@ -44,6 +44,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+coverage-report
 
 # Translations
 *.mo
@@ -87,3 +88,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# ignore backup files etc
+*.bak
+*.old
