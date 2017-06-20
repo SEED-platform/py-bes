@@ -1,0 +1,10 @@
+[paths]
+source =
+    pybes
+
+[run]
+source =
+    pybes
+omit =
+    *tox*
+    setup.py

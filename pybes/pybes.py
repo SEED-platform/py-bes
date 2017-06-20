@@ -850,7 +850,7 @@ class BESClient(object):
         if extras:
             building.update(extras)
         params = {'building': building}
-        print 'P:', params
+        print('P:', params)
         response = self._put(endpoint, id=building_id, **params)
         self._check_call_success(
             response, prefix="Unable to update preview building"
@@ -1310,7 +1310,7 @@ class BESClient(object):
         :param name: name of resource
         :type name: str
         :param kwargs: resource attributes to set
-        :type kwargs': str
+        :type kwargs: str
         :returns: resource
         :rtype: list
         :raises: BESError/APIError
