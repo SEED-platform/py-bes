@@ -866,16 +866,17 @@ class TestBlockAPI(unittest.TestCase):
         url = self.client._construct_url(
             'blocks', id=1, action='block_air_handlers', api_version=1
         )
-        expected = {
-            'name': 'test',
+        params = {
             'air_handler_id': 2,
             'token': self.token,
         }
+        name = 'test'
         result = self.client.create_block_resource(
-            'air handler', 1, 2, name='test'
+            'air handler', 1, name, **params
         )
+        params.update({'name': name})
         mock_requests.post.assert_called_with(
-            url, json=expected, timeout=TIMEOUT
+            url, json=params, timeout=TIMEOUT
         )
         self.assertEqual(result, self.json)
 

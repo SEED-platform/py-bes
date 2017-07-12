@@ -470,6 +470,8 @@ class BESClient(object):
                     error = response.json().get('errors')
             except ValueError:
                 error = response.content
+                if isinstance(error, bytes):
+                    error = error.decode('utf-8')
                 # generic error page
                 if error.startswith('<!DOCTYPE html>'):
                     error = None
@@ -850,7 +852,7 @@ class BESClient(object):
         if extras:
             building.update(extras)
         params = {'building': building}
-        print 'P:', params
+        print('P:', params)
         response = self._put(endpoint, id=building_id, **params)
         self._check_call_success(
             response, prefix="Unable to update preview building"
@@ -1310,7 +1312,7 @@ class BESClient(object):
         :param name: name of resource
         :type name: str
         :param kwargs: resource attributes to set
-        :type kwargs': str
+        :type kwargs: str
         :returns: resource
         :rtype: list
         :raises: BESError/APIError
@@ -1616,8 +1618,7 @@ class BESClient(object):
 
         If a simulation has not been run this will 404
 
-        In testing error with 500 even when this was the case, and you could
-        download a report.
+        Only works on 'Full' buildings; preview buildings will raise 500 error.
         """
         # UNVERIFIED - 404/500
         api_version = 1
