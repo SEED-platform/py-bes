@@ -26,7 +26,6 @@ DIGITS = set(string.digits)
 SYMBOLS = set(string.punctuation)
 
 
-API_VERSION = 'v2'
 BASE_URL = 'https://api.labworks.org/api'
 # BASE_URL = 'https://buildingenergyscore.energy.gov/api'
 
@@ -238,8 +237,8 @@ def _verify_password(passwd, min_chars=8):
 
 # Public Functions and Classes
 def create_api_user(organization_token, email, password, password_confirmation,
-                    first_name, last_name):
-    # type(str, str, str, str, str) -> int, int, int
+                    first_name, last_name, base_url):
+    # type(str, str, str, str, str, str) -> int, int, int
     """
     Create a new API user account.
 
@@ -263,7 +262,7 @@ def create_api_user(organization_token, email, password, password_confirmation,
     if password != password_confirmation:
         msg = 'Passwords do not match!'
         raise BESError(msg)
-    client = BESClient()
+    client = BESClient(base_url=base_url)
     password = _verify_password(password)
     params = {
         'organization_token': organization_token,
@@ -281,6 +280,25 @@ def create_api_user(organization_token, email, password, password_confirmation,
     org_id = response.json()['organization_id']
     role_id = response.json()['role_id']
     return user_id, org_id, role_id
+
+
+def get_resource_types(client):
+    # type(BESClient) -> dict
+    """Returns a lookup table for identyfiying resource type ids"""
+    resource_types = {}
+    for val in BES_RESOURCE_TYPES.values():
+        try:
+            resources = client.list_resource_types(val)
+            resource_types[val] = {
+                plt['display_name'].lower(): plt for plt in resources
+            }
+        except KeyError as err:
+            resource_types[val] = {
+                plt['name'].lower(): plt for plt in resources
+            }
+        except APIError as err:
+            print val, err.status_code, err.message
+    return resource_types
 
 
 def remove_unknown(params):
@@ -374,12 +392,15 @@ class BESClient(object):
     # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
     def __init__(self, email=None, password=None, organization_token=None,
-                 access_token=None, user_id=None, timeout=TIMEOUT):
+                 access_token=None, user_id=None, base_url=None,
+                 api_version=2, timeout=TIMEOUT):
         # pylint: disable=too-many-arguments
         """
         Set up Client:
 
-        Note for everything  you will need to supply email, password and
+        Note: You must set base_url to point to the correct url.
+
+        Note for everything you will need to supply email, password and
         organization_token, or access_token (& user_id) in order to
         authenticate. If the former, instantiating a Client will fetch
         an access token and store it as client.token. You can reuse this token
@@ -402,6 +423,14 @@ class BESClient(object):
         :param timeout: server timeout in seconds default 0.5
         :type timeout: float
         """
+        if not base_url:
+            raise APIError('Base url must be supplied')
+        else:
+            self.base_url = base_url
+        if not api_version:
+            raise APIError('API version must be supplied')
+        else:
+            self.api_version = str(api_version)
         self.email = email
         self.password = password
         self.organization_token = organization_token
@@ -540,10 +569,10 @@ class BESClient(object):
 
         action = action.strip('/') if action else None
         api_id = int(api_id) if api_id else None
-        api_version = str(api_version) if api_version else API_VERSION
+        api_version = str(api_version) if api_version else self.api_version
         if not api_version.startswith('v'):
             api_version = 'v{}'.format(api_version)
-        base_url = base_url.rstrip('/') if base_url else BASE_URL
+        base_url = base_url.rstrip('/') if base_url else self.base_url
 
         url = "{}/{}/{}".format(base_url, api_version, endpoint.strip('/'))
 
@@ -852,7 +881,6 @@ class BESClient(object):
         if extras:
             building.update(extras)
         params = {'building': building}
-        print('P:', params)
         response = self._put(endpoint, id=building_id, **params)
         self._check_call_success(
             response, prefix="Unable to update preview building"

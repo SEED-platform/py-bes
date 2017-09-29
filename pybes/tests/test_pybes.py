@@ -19,7 +19,9 @@ import requests
 
 # Local Imports
 import pybes.pybes as pybes
-from pybes.pybes import API_VERSION, BASE_URL, TIMEOUT
+from pybes.pybes import TIMEOUT
+API_VERSION = '2'
+BASE_URL = 'https://api.labworks.org/api'
 
 # Constants
 TEST_BUILDING = {
@@ -312,15 +314,18 @@ class TestAPIGenerics(unittest.TestCase):
     def setUp(self):
         self.endpoint = 'endpoint'
         self.token = 'token'
-        self.url = "{}/{}/{}".format(BASE_URL, API_VERSION, self.endpoint)
-        self.client = pybes.BESClient(access_token=self.token)
+        self.url = "{}/v{}/{}".format(BASE_URL, API_VERSION, self.endpoint)
+        self.client = pybes.BESClient(
+            access_token=self.token, base_url=BASE_URL
+        )
 
     def test_authenticate(self, mock_requests):
         """test _authenticate method (via init)."""
         params = {
             'email': 'test@test.org',
             'password': 'password',
-            'organization_token': 'org_token'
+            'organization_token': 'org_token',
+            'base_url': BASE_URL
         }
 
         mock_response = mock.MagicMock()
@@ -333,10 +338,11 @@ class TestAPIGenerics(unittest.TestCase):
 
         client = pybes.BESClient(**params)
 
-        url = "{}/{}/{}".format(
+        url = "{}/v{}/{}".format(
             BASE_URL, API_VERSION, 'users/authenticate'
         )
         request_params = params.copy()
+        request_params.pop('base_url')
         request_params['password_confirmation'] = params['password']
 
         mock_requests.post.assert_called_with(
@@ -427,7 +433,7 @@ class TestAPIGenericsNoCall(unittest.TestCase):
     """Test generic api client functionality that doesn't hit api"""
 
     def setUp(self):
-        self.client = pybes.BESClient()
+        self.client = pybes.BESClient(base_url=BASE_URL)
 
     def test_check_call_success(self):
         """Test _check_call_success method"""
@@ -501,7 +507,7 @@ class TestAPIGenericsNoCall(unittest.TestCase):
 
     def test_construct_url(self):
         """Test _construct_url method"""
-        first = "{}/{}/".format(BASE_URL, API_VERSION)
+        first = "{}/v{}/".format(BASE_URL, API_VERSION)
         endpoint = 'endpoint'
 
         expected = first + endpoint
@@ -562,7 +568,9 @@ class TestPreviewBuildingAPI(unittest.TestCase):
         self.mock_response.content = 'pdf'
         self.mock_response.raise_for_status.return_value = True
         self.token = 'token'
-        self.client = pybes.BESClient(access_token=self.token)
+        self.client = pybes.BESClient(
+            access_token=self.token, base_url=BASE_URL
+        )
         self.url = self.client._construct_url('preview_buildings')
         self.id_url = "{}/{}".format(self.url, self.id)
 
@@ -714,7 +722,9 @@ class TestHESUserAPI(unittest.TestCase):
         self.mock_response.json.return_value = self.json
         self.mock_response.raise_for_status.return_value = True
         self.token = 'token'
-        self.client = pybes.BESClient(access_token=self.token)
+        self.client = pybes.BESClient(
+            access_token=self.token, base_url=BASE_URL
+        )
         self.url = self.client._construct_url('users')
         self.id_url = "{}/{}".format(self.url, self.id)
 
@@ -774,7 +784,7 @@ class TestHESUserAPI(unittest.TestCase):
         }
         result = pybes.create_api_user(
             'orgtoken', self.email, self.password, self.password,
-            self.first, self.last
+            self.first, self.last, BASE_URL
         )
         mock_requests.post.assert_called_with(
             self.url, json=expected, timeout=TIMEOUT
@@ -785,7 +795,7 @@ class TestHESUserAPI(unittest.TestCase):
         with self.assertRaises(pybes.BESError) as conm:
             pybes.create_api_user(
                 'orgtoken', self.email, self.password, 'Nope!',
-                self.first, self.last
+                self.first, self.last, BASE_URL
             )
         error = conm.exception
         expected = "Passwords do not match!"
@@ -803,7 +813,9 @@ class TestBlockAPI(unittest.TestCase):
         self.mock_response.json.return_value = self.json
         self.mock_response.raise_for_status.return_value = True
         self.token = 'token'
-        self.client = pybes.BESClient(access_token=self.token)
+        self.client = pybes.BESClient(
+            access_token=self.token, base_url=BASE_URL
+        )
         self.url = self.client._construct_url('blocks', api_version=1)
         self.id_url = "{}/{}".format(self.url, self.id)
 
@@ -934,7 +946,9 @@ class TestBuildingAPI(unittest.TestCase):
         self.mock_response.json.return_value = self.json
         self.mock_response.raise_for_status.return_value = True
         self.token = 'token'
-        self.client = pybes.BESClient(access_token=self.token)
+        self.client = pybes.BESClient(
+            access_token=self.token, base_url=BASE_URL
+        )
         self.url = self.client._construct_url('buildings', api_version=1)
         self.id_url = "{}/{}".format(self.url, self.id)
 
