@@ -10,7 +10,9 @@ user and request an API key. You will also need the username and password, for
 that user as well as the organization token. See:
 
 https://buildingenergyscore.energy.gov/
+
 https://buildingenergyscore.energy.gov/d/users/sign_up
+
 https://buildingenergyscore.energy.gov/api
 
 This tool concentrates on the Preview Building API (API v2), though some
