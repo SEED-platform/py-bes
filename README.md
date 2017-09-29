@@ -24,6 +24,15 @@ as you are reusing the client).
 
 Usage:
 =====
+Here is an example that will take you through a basic workflow of
+
+# Setting up an api user
+# Instatiating the client to connect to the API
+# Creating a preview building
+# Editing that building
+# Running the simulation and getting the results
+
+
 
 ```python
 ORG_TOKEN = your org token
