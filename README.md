@@ -9,11 +9,9 @@ Note this is not a publically accessible API, you will neeed to sign up as a
 user and request an API key. You will also need the username and password, for
 that user as well as the organization token. See:
 
-https://buildingenergyscore.energy.gov/
-
-https://buildingenergyscore.energy.gov/d/users/sign_up
-
-https://buildingenergyscore.energy.gov/api
+* https://buildingenergyscore.energy.gov/
+* https://buildingenergyscore.energy.gov/d/users/sign_up
+* https://buildingenergyscore.energy.gov/api
 
 This tool concentrates on the Preview Building API (API v2), though some
 functionality has been provided for the v1 API.
