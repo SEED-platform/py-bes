@@ -22,15 +22,27 @@ not necessary if you supply your username and password to the client as it
 will fetch one when it initializes. This is the recommended route (as long
 as you are reusing the client).
 
+Installation
+============
+py-bes should soon be released on pypi so you will be able to install it
+via pip for normal usage
+
+otherwise clone the repo and install the requirements.
+```
+git clone https://github.com/GreenBuildingRegistry/py-bes.git
+cd py-bes
+git install -r requirements.txt
+```
+
 Usage:
-=====
+======
 Here is an example that will take you through a basic workflow of
 
-# Setting up an api user
-# Instatiating the client to connect to the API
-# Creating a preview building
-# Editing that building
-# Running the simulation and getting the results
+1. Setting up an api user
+2. Instatiating the client to connect to the API
+3. Creating a preview building
+4. Editing that building
+5. Running the simulation and getting the results
 
 
 
