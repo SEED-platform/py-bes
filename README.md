@@ -155,27 +155,31 @@ Building details 1:
 
 
 ##  Update some details
-### Update the lighting resource
+### Update the water heater
+
+This uses some v1 api calls.
+
 ```python
 block_1 = building_details_1['blocks'][0]
 
-lighting = block_1['lighting']
+fuel_types = resource_types['fuel_types']
 
-fixture1_id = resources[0]['fixture_id']
-fixture2_id = resources[1]['fixture_id']
+resources = client.get_block_resources('water_heater', block_1['block_id'])
+water_heater_id = resources[0]['water_heater_id']
 
-lamp_types = resource_types['lamp_types']
-
-client.update_resource(
-    'fixture',
-    fixture1_id,
-    lamp_type_id=lamp_types['fluorescent t5']['id']
-)
+# not needed for update but allows you to see what can be set
+water_heater = client.get_resource('water_heater', water_heater_id)
 
 client.update_resource(
-    'fixture',
-    fixture2_id,
-    lamp_type_id=lamp_types['led']['id']
+    'water_heater',
+    water_heater_id,
+    tank_insulation_r_value=11
+  )
+
+client.update_resource(
+    'water_heater',
+    water_heater_id,
+    fuel_type_id=fuel_types['electricity']['id']
 )
 ```
 ### set mode to editing
@@ -183,12 +187,15 @@ client.update_resource(
 client.set_preview_building_status(building_id_1, 'edit_mode')
 ```
 
-### update the hvac system
+### update the floor type
+
+The value for floor type is one of ```resource_types['floot_types'].keys()```
+
 ```python
-cient.update_preview_building(
+client.update_preview_building(
     building_id_1,
     block_1['block_id'],
-    extras={'hvac_system:type': 'Packaged Rooftop Air Conditioner'}
+    extras={'floor:floor_type': 'wood framed'}
 )
 ```
 
@@ -204,7 +211,7 @@ if result == 'valid':
 
 ### Get some details
 ```python
-tatus = client.get_preview_building(building_id_1)['status!']
+status = client.get_preview_building(building_id_1)['status!']
 if status == 'Rated':
     details = client.get_preview_building(building_id, report_type='pdf')
 ```
@@ -213,16 +220,16 @@ details:
 
 ```
 {
-  u'high_score': 8.0,
-  u'id': 336,
-  u'low_score': 4.0,
-  u'max_eui': 254.0695343017578,
-  u'mean_eui': 140.03451538085938,
-  u'min_eui': 87.4965591430664,
-  u'name': u'Preview Example 1',
-  u'pdf_url': u'http://api.labworks.org/buildings/336/report.pdf',
-  u'potential_energy_savings': 30,
-  u'potential_high_score': 10,
-  u'potential_low_score': 6.5
+    u'name': u'Preview Example 1',
+    u'id': 344
+    u'pdf_url': u'http://api.labworks.org/buildings/344/report.pdf',
+    u'potential_energy_savings': 30,
+    u'low_score': 3.5,
+    u'potential_low_score': 6.0,
+    u'high_score': 7.5,
+    u'potential_high_score': 10.0,
+    u'mean_eui': 158.85740661621094,
+    u'min_eui': 88.42064666748047,
+    u'max_eui': 250.76022338867188,
 }
 ```
