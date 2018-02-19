@@ -1,3 +1,6 @@
+Py-BEAS
+=======
+
 # A Python client for accessing the Building Energy Score API
 
 This is a Python client for accessing the U.S. Department of Energy’s

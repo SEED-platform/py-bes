@@ -26,9 +26,6 @@ DIGITS = set(string.digits)
 SYMBOLS = set(string.punctuation)
 
 
-BASE_URL = 'https://api.labworks.org/api'
-# BASE_URL = 'https://buildingenergyscore.energy.gov/api'
-
 # http://docs.python-requests.org/en/master/user/quickstart/#timeouts
 TIMEOUT = 10
 
@@ -297,7 +294,7 @@ def get_resource_types(client):
                 plt['name'].lower(): plt for plt in resources
             }
         except APIError as err:
-            print val, err.status_code, err.message
+            print(val, err.status_code, err.message)
     return resource_types
 
 
@@ -369,7 +366,8 @@ def unroll(dct):
 
 class BESError(Exception):
     """Base class for exceptions in the modules"""
-    def __init__(self, msg,  **kwargs):
+
+    def __init__(self, msg, **kwargs):
         self.message = msg
         for key, val in kwargs.items():
             setattr(self, key, val)
@@ -584,9 +582,9 @@ class BESClient(object):
 
     def _get(self, endpoint, compulsory_params=None, noid=False, **kwargs):
         """Make api calls using GET."""
-        url = self._construct_url(endpoint, noid=noid,  **kwargs)
+        url = self._construct_url(endpoint, noid=noid, **kwargs)
         params = self._construct_payload(
-             kwargs, compulsory_params=compulsory_params
+            kwargs, compulsory_params=compulsory_params
         )
         payload = {'timeout': self.timeout}
         if params:
@@ -1112,7 +1110,7 @@ class BESClient(object):
         """
         api_version = 1
         endpoint = 'blocks'
-        response = self._delete(endpoint, id=id,  api_version=api_version)
+        response = self._delete(endpoint, id=id, api_version=api_version)
         self._check_call_success(
             response, prefix="Unable to delete block"
         )
@@ -1130,7 +1128,7 @@ class BESClient(object):
         api_version = 1
         endpoint = 'blocks'
         params = {'api_version': api_version}
-        response = self._get(endpoint, id=id,  **params)
+        response = self._get(endpoint, id=id, **params)
         self._check_call_success(
             response, prefix="Unable to get block"
         )
@@ -1490,7 +1488,7 @@ class BESClient(object):
             'api_version': api_version,
         })
         response = self._put(
-            endpoint,   **params
+            endpoint, **params
         )
         prefix = "Unable to update {}".format(endpoint)
         self._check_call_success(response, prefix=prefix)
@@ -1908,7 +1906,7 @@ class BESClient(object):
         endpoint = _get_resource_name(resource_name)
         params = _params_from_dict(kwargs)
         response = self._put(
-            endpoint, id=id, api_version=api_version,  **params
+            endpoint, id=id, api_version=api_version, **params
         )
         prefix = "Unable to update {}".format(endpoint)
         self._check_call_success(response, prefix=prefix)

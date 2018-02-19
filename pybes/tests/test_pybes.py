@@ -11,15 +11,22 @@ pybes tests
 # Imports from Standard Library
 import random
 import string
+import sys
 import unittest
 
 # Imports from Third Party Modules
-import mock
 import requests
 
 # Local Imports
 import pybes.pybes as pybes
 from pybes.pybes import TIMEOUT
+
+PY3 = sys.version_info[0] == 3
+if PY3:
+    from unittest import mock
+else:
+    import mock
+
 API_VERSION = '2'
 BASE_URL = 'https://api.labworks.org/api'
 
@@ -210,7 +217,7 @@ class MiscTests(unittest.TestCase):
     def test_split_key(self):
         """Test _split_key function."""
         # no subkey
-        expected = ('key1',  1)
+        expected = ('key1', 1)
         result = pybes._split_key({}, 'key1', 1)
         self.assertEqual(expected, result)
 
@@ -288,7 +295,7 @@ class MiscTests(unittest.TestCase):
             unrolled['blocks'][0]['floor'],
             {
                 u'floor_type': u'Slab-on-Grade',
-                u'floor_type_status!':  u'Do not know'
+                u'floor_type_status!': u'Do not know'
             }
         )
 
@@ -375,7 +382,7 @@ class TestAPIGenerics(unittest.TestCase):
             'json': {'token': self.token, 'a': 1}
         }
 
-        result = self.client._post(self.endpoint, files='files',  a=1)
+        result = self.client._post(self.endpoint, files='files', a=1)
         mock_requests.post.assert_called_with(self.url, **expected)
         self.assertEqual(mock_response, result)
 
@@ -389,7 +396,7 @@ class TestAPIGenerics(unittest.TestCase):
             'files': 'files',
             'json': {'token': self.token, 'a': 1}
         }
-        result = self.client._put(self.endpoint, files='files',  a=1)
+        result = self.client._put(self.endpoint, files='files', a=1)
         mock_requests.put.assert_called_with(self.url, **expected)
         self.assertEqual(mock_response, result)
 
@@ -397,7 +404,7 @@ class TestAPIGenerics(unittest.TestCase):
             'timeout': TIMEOUT,
             'params': {'token': self.token, 'a': 1}
         }
-        self.client._put(self.endpoint, use_json=False,  a=1)
+        self.client._put(self.endpoint, use_json=False, a=1)
         mock_requests.put.assert_called_with(self.url, **expected)
 
     def test_patch(self, mock_requests):
@@ -410,7 +417,7 @@ class TestAPIGenerics(unittest.TestCase):
             'json': {'token': self.token, 'a': 1}
         }
 
-        result = self.client._patch(self.endpoint, files='files',  a=1)
+        result = self.client._patch(self.endpoint, files='files', a=1)
         mock_requests.patch.assert_called_with(self.url, **expected)
         self.assertEqual(mock_response, result)
 
@@ -1096,7 +1103,7 @@ class TestBuildingAPI(unittest.TestCase):
             'token': self.token,
         }
         result = self.client.create_resource(
-            'air handler', 1,  name='test'
+            'air handler', 1, name='test'
         )
         mock_requests.post.assert_called_with(
             url, json=expected, timeout=TIMEOUT
