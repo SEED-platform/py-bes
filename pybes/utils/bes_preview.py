@@ -103,7 +103,9 @@ def get_bes_preview_report(client, building_id, status=None, logger=log):
     if not status:
         status = client.get_preview_building(building_id)['status!']
     if status != 'Running' and status != 'Rated':
-        status = initiate_preview_simulation(client, building_id)
+        status = initiate_preview_simulation(
+            client, building_id, logger=logger
+        )
 
     if status == 'Rated':
         try:
