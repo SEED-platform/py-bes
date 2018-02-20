@@ -90,7 +90,9 @@ def get_bes_full_report(client, building, status_map=None,
     status = status_map.get(building['status_type_id'])
 
     if status != 'Running' and status != 'Rated':
-        status = initiate_full_simulation(client, building_id)
+        status = initiate_full_simulation(
+            client, building_id, status_map=status_map, logger=logger
+        )
 
     if status == 'Rated':
         try:
@@ -120,7 +122,7 @@ def get_bes_full_report(client, building, status_map=None,
 
 
 def get_bes_buildings(incomplete, bes_ids=None, full_bldg=False,
-                      status_map=None, **bes_kwargs):
+                      status_map=None, logger=log, **bes_kwargs):
     # type: (list, Optional[List[int]]) -> Dict
     """Get buildings with score report from BES api"""
     if not status_map:
@@ -156,11 +158,13 @@ def get_bes_buildings(incomplete, bes_ids=None, full_bldg=False,
             status = bldg['status!']
         if bldg_id in bes_preview_ids:
             building, status = get_bes_preview_report(
-                client, bldg_id, status=status
+                client, bldg_id, status=status, logger=logger
             )
             bes_type = 'Preview'
         else:
-            building, status = get_bes_full_report(client, bldg)
+            building, status = get_bes_full_report(
+                client, bldg, status_map=status_map, logger=logger
+            )
             bes_type = 'Full'
 
         if not building:
