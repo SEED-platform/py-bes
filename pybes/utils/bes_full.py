@@ -113,7 +113,7 @@ def get_bes_full_report(client, building, status_map=None,
 
             complete_report = building.copy()
             complete_report.update(additional_facts)
-            complete_report.update(score_report)
+            complete_report.update(score_report.get('score', {}))
             complete_report = frozendict(complete_report)
         except BESError as err:
             msg = "Error getting score for full building: {}".format(err)
@@ -163,7 +163,8 @@ def get_bes_buildings(incomplete, bes_ids=None, full_bldg=False,
             bes_type = 'Preview'
         else:
             building, status = get_bes_full_report(
-                client, bldg, status_map=status_map, logger=logger
+                client, bldg, status_map=status_map, logger=logger,
+                **bes_kwargs
             )
             bes_type = 'Full'
 
@@ -173,4 +174,4 @@ def get_bes_buildings(incomplete, bes_ids=None, full_bldg=False,
             )
             incomplete.append(incomplete_bldg)
         else:
-            yield building
+            yield building, bes_type

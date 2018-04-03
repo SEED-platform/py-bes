@@ -113,16 +113,18 @@ def get_bes_preview_report(client, building_id, status=None, logger=log):
                 building_id, report_type='pdf'
             )
             pdf_url = score_report.pop('pdf_url', None)
+            score_report.pop('name', None)
+            score_report.pop('id', None)
             additional_facts = {
                 'bes_type': 'Preview',
                 'bes_building_id': building_id,
                 'bes_status': status,
                 'pdf_url': pdf_url,
-                'score': score_report
             }
 
             complete_report = client.get_building(building_id)
             complete_report.update(additional_facts)
+            complete_report.update(score_report)
             complete_report = frozendict(complete_report)
         except BESError as err:
             msg = (

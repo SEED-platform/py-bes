@@ -37,9 +37,19 @@ BES_REPORT_KEYS = (
     'total_floor_area', 'use_types', 'blocks', 'roofs', 'walls', 'floors',
     'windows', 'skylights', 'fixtures', 'water_heaters', 'air_handlers',
     'zone_equipments', 'operations', 'plants', 'ratings', 'notes',
-    'pdf_url', 'score', 'bes_building_id', 'bes_type', 'bes_status',
+    'pdf_url', 'bes_building_id', 'bes_type', 'bes_status',
     'property_type'
 )
+FULL_SCORE_KEYS = (
+    'source_norm_eui', 'source_points', 'potential_eui',
+    'potential_points', 'source_eui', 'potential_norm_eui'
+)
+PREVIEW_SCORE_KEYS = (
+    'mean_eui', 'high_score', 'potential_energy_savings', 'min_eui',
+    'low_score', 'potential_low_score', 'max_eui', 'potential_high_score'
+)
+BES_FULL_REPORT_KEYS = set(BES_REPORT_KEYS + FULL_SCORE_KEYS)
+BES_PREVIEW_REPORT_KEYS = set(BES_REPORT_KEYS + PREVIEW_SCORE_KEYS)
 ADDRESS_MAP = {
     'address_line_1': 'address',
     'city': 'city',
