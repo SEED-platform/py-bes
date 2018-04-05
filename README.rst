@@ -252,6 +252,39 @@ details::
     }
 
 
+Helper functions
+----------------
+Several helper functions have been included in pybes.utils to facilitate initiating simulations and downloading report results
+get_bes_buildings is a generator function which yields the building report and building type ('Preview', 'Full') for all rated buildings by calling get_bes_full_report and get_bes_preview_report as appropriate
+the get_bes_full_report and get_bes_preview_report functions also initiate the simulation for any building that is not already 'Running' or 'Rated'
+
+
+Connecting with SEED Platform
+-----------------------------
+Additional tools are available for use in building scripts to connect Building Energy Asset Score to the SEED Platform api, whether you choose to start your flow from either tool's front end interface, or by parsing csv files through either api.
+
+py-seed::
+    A python client for interacting with the SEED Platform api.  https://github.com/GreenBuildingRegistry/py-seed  see also https://github.com/SEED-platform/seed
+
+jwt-oauth2::
+    Provides a python client for authorizing SEED api connections using OAuth2 through a JWT grant flow.  https://github.com/GreenBuildingRegistry/jwt-oauth2
+    Other OAuth grant type flows are available for connecting with SEED. See https://github.com/oauthlib/oauthlib, and https://github.com/evonove/django-oauth-toolkit for information about clients for other grant types
+
+usaddress-scourgify::
+    Provides functionality for cleaning/normalizing address data. This tool was developed to assist in the process of parsing csv files into Building Energy Asset Score or the SEED Platform api to help ensure reliable address matching coming and going from either api. https://github.com/GreenBuildingRegistry/usaddress-scourgify see also https://github.com/datamade/usaddress
+
+dubplate::
+    Provides an immutable, dict-like structure for storing data, that may be defined with a fixed set of keys. That can also store additional meta-data like data as object attributes that can be accessed using dotted notation e.g. record.meta_attr.  Subclasses of the Record class can be used to good effect in handling data to be passed between one api and the other. https://github.com/GreenBuildingRegistry/dubplate
+
+yaml-config::
+    A Python client for reading yaml based config files. This tool was developed largely for the purpose in managing client access data such as password, org_token, etc.  https://github.com/GreenBuildingRegistry/yaml-config
+
+pybes.utils also includes a create_bes_preview_bldg_from_seed function that uses the results of a single PropertyView record from a SEED api /api/v2/property_views/ endpoint call to build an appropriate Building Energy Asset Score preview payload which it sends to the create_preview_building endpoint.
+bes_constants provides ADDRESS_MAP, PROPERTY_STATE_MAP, and SEED_STATE_FIELDS to assist in parsing Building Energy Asset Score results into SEED Platform api friendly payloads.
+
+All above tools are open source packages and installable via pip.
+
+
 Contributing
 ------------
 
