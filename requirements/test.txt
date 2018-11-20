@@ -1,0 +1,6 @@
+-r dev.txt
+
+mock
+pytest
+pytest-cov
+pytest-xdist
