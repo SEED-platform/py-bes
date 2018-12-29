@@ -1,6 +1,12 @@
 Py-BES
 ======
 
+.. image:: https://travis-ci.org/SEED-platform/py-bes.svg?branch=dev
+    :target: https://travis-ci.org/SEED-platform/py-bes
+
+.. image:: https://pypip.in/v/py-bes/badge.svg
+        :target: https://pypi.python.org/pypi/py-bes/
+
 A Python client for accessing the Building Energy Asset Score API
 
 

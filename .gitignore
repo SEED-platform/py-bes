@@ -93,3 +93,4 @@ ENV/
 *.bak
 *.old
 .pytest_cache/
+.idea
